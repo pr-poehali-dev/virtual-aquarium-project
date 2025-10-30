@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ interface Creature {
   habitat: string;
   icon: string;
   facts: string[];
+  soundFrequency?: number;
 }
 
 const oceanCreatures = {
@@ -21,7 +22,8 @@ const oceanCreatures = {
       description: 'Умные и социальные морские млекопитающие, известные своим дружелюбием к человеку.',
       habitat: 'Поверхностный слой (0-200м)',
       icon: '🐬',
-      facts: ['Используют эхолокацию', 'Спят с открытым глазом', 'Могут нырять на 300м']
+      facts: ['Используют эхолокацию', 'Спят с открытым глазом', 'Могут нырять на 300м'],
+      soundFrequency: 880
     },
     {
       id: 2,
@@ -29,7 +31,8 @@ const oceanCreatures = {
       description: 'Древние рептилии, которые путешествуют тысячи километров через океаны.',
       habitat: 'Поверхностный слой (0-200м)',
       icon: '🐢',
-      facts: ['Живут до 100 лет', 'Возвращаются на родной пляж', 'Питаются медузами']
+      facts: ['Живут до 100 лет', 'Возвращаются на родной пляж', 'Питаются медузами'],
+      soundFrequency: 440
     },
     {
       id: 3,
@@ -37,7 +40,8 @@ const oceanCreatures = {
       description: 'Гигантские грациозные скаты с размахом крыльев до 7 метров.',
       habitat: 'Поверхностный слой (0-200м)',
       icon: '🦈',
-      facts: ['Фильтруют планктон', 'Самые умные рыбы', 'Вес до 2 тонн']
+      facts: ['Фильтруют планктон', 'Самые умные рыбы', 'Вес до 2 тонн'],
+      soundFrequency: 330
     }
   ],
   mid: [
@@ -47,7 +51,8 @@ const oceanCreatures = {
       description: 'Самые глубоководные ныряльщики среди млекопитающих.',
       habitat: 'Средняя глубина (200-1000м)',
       icon: '🐋',
-      facts: ['Ныряют на 2000м', 'Задерживают дыхание на 90 минут', 'Охотятся на гигантских кальмаров']
+      facts: ['Ныряют на 2000м', 'Задерживают дыхание на 90 минут', 'Охотятся на гигантских кальмаров'],
+      soundFrequency: 220
     },
     {
       id: 5,
@@ -55,7 +60,8 @@ const oceanCreatures = {
       description: 'Быстрые хищники, способные развивать скорость до 75 км/ч.',
       habitat: 'Средняя глубина (200-1000м)',
       icon: '🐟',
-      facts: ['Температура тела выше воды', 'Мигрируют через океаны', 'Плавают всю жизнь']
+      facts: ['Температура тела выше воды', 'Мигрируют через океаны', 'Плавают всю жизнь'],
+      soundFrequency: 523
     },
     {
       id: 6,
@@ -63,7 +69,8 @@ const oceanCreatures = {
       description: 'Хищник с характерным длинным острым выростом.',
       habitat: 'Средняя глубина (200-1000м)',
       icon: '🗡️',
-      facts: ['Скорость до 100 км/ч', 'Меч длиной 1.5м', 'Охотятся на кальмаров']
+      facts: ['Скорость до 100 км/ч', 'Меч длиной 1.5м', 'Охотятся на кальмаров'],
+      soundFrequency: 659
     }
   ],
   deep: [
@@ -73,7 +80,8 @@ const oceanCreatures = {
       description: 'Загадочные существа из глубин, достигающие 13 метров в длину.',
       habitat: 'Глубоководный мир (1000м+)',
       icon: '🦑',
-      facts: ['Самые большие глаза в мире', 'Живут на глубине 1000м', 'Сражаются с кашалотами']
+      facts: ['Самые большие глаза в мире', 'Живут на глубине 1000м', 'Сражаются с кашалотами'],
+      soundFrequency: 196
     },
     {
       id: 8,
@@ -81,7 +89,8 @@ const oceanCreatures = {
       description: 'Биолюминесцентная рыба с "фонариком" для приманки добычи.',
       habitat: 'Глубоководный мир (1000м+)',
       icon: '🐡',
-      facts: ['Светятся в темноте', 'Самцы в 10 раз меньше самок', 'Живут на 2000м']
+      facts: ['Светятся в темноте', 'Самцы в 10 раз меньше самок', 'Живут на 2000м'],
+      soundFrequency: 147
     },
     {
       id: 9,
@@ -89,7 +98,8 @@ const oceanCreatures = {
       description: 'Древние ракообразные размером с футбольный мяч.',
       habitat: 'Глубоководный мир (1000м+)',
       icon: '🦞',
-      facts: ['Могут не есть 5 лет', 'Родственники мокриц', 'Длина до 50 см']
+      facts: ['Могут не есть 5 лет', 'Родственники мокриц', 'Длина до 50 см'],
+      soundFrequency: 110
     }
   ]
 };
@@ -157,13 +167,44 @@ const actions = [
 export default function Index() {
   const [selectedCreature, setSelectedCreature] = useState<Creature | null>(null);
   const [activeLayer, setActiveLayer] = useState<'surface' | 'mid' | 'deep'>('surface');
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    return () => {
+      audioContextRef.current?.close();
+    };
+  }, []);
+
+  const playOceanSound = (frequency: number = 440) => {
+    if (!audioContextRef.current) return;
+    
+    const ctx = audioContextRef.current;
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+    
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+    
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.8);
+  };
 
   const renderCreatures = (creatures: Creature[]) => {
     return creatures.map((creature) => (
       <Card
         key={creature.id}
         className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 animate-fade-in bg-card/80 backdrop-blur-sm border-2 border-primary/20"
-        onClick={() => setSelectedCreature(creature)}
+        onClick={() => {
+          playOceanSound(creature.soundFrequency);
+          setSelectedCreature(creature);
+        }}
       >
         <CardContent className="p-6">
           <div className="text-6xl mb-4 float-animation group-hover:scale-110 transition-transform">
