@@ -167,14 +167,59 @@ const actions = [
 export default function Index() {
   const [selectedCreature, setSelectedCreature] = useState<Creature | null>(null);
   const [activeLayer, setActiveLayer] = useState<'surface' | 'mid' | 'deep'>('surface');
+  const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
+  const [bubbles, setBubbles] = useState<Array<{ id: number; x: number; y: number }>>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const ambientOscillatorRef = useRef<OscillatorNode | null>(null);
+  const ambientGainRef = useRef<GainNode | null>(null);
 
   useEffect(() => {
     audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     return () => {
+      if (ambientOscillatorRef.current) {
+        ambientOscillatorRef.current.stop();
+      }
       audioContextRef.current?.close();
     };
   }, []);
+
+  const toggleAmbientSound = () => {
+    if (!audioContextRef.current) return;
+    
+    const ctx = audioContextRef.current;
+    
+    if (isAmbientPlaying && ambientOscillatorRef.current) {
+      ambientGainRef.current?.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+      setTimeout(() => {
+        ambientOscillatorRef.current?.stop();
+        ambientOscillatorRef.current = null;
+      }, 1000);
+      setIsAmbientPlaying(false);
+    } else {
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      
+      oscillator.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(110, ctx.currentTime);
+      
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(400, ctx.currentTime);
+      
+      gainNode.gain.setValueAtTime(0.01, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 2);
+      
+      oscillator.start(ctx.currentTime);
+      
+      ambientOscillatorRef.current = oscillator;
+      ambientGainRef.current = gainNode;
+      setIsAmbientPlaying(true);
+    }
+  };
 
   const playOceanSound = (frequency: number = 440) => {
     if (!audioContextRef.current) return;
@@ -196,17 +241,47 @@ export default function Index() {
     oscillator.stop(ctx.currentTime + 0.8);
   };
 
+  const createBubbles = (e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const newBubbles = Array.from({ length: 5 }, (_, i) => ({
+      id: Date.now() + i,
+      x: x + (Math.random() - 0.5) * 40,
+      y: y + (Math.random() - 0.5) * 40
+    }));
+    
+    setBubbles(prev => [...prev, ...newBubbles]);
+    
+    setTimeout(() => {
+      setBubbles(prev => prev.filter(b => !newBubbles.find(nb => nb.id === b.id)));
+    }, 1000);
+  };
+
   const renderCreatures = (creatures: Creature[]) => {
     return creatures.map((creature) => (
       <Card
         key={creature.id}
-        className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 animate-fade-in bg-card/80 backdrop-blur-sm border-2 border-primary/20"
-        onClick={() => {
+        className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 animate-fade-in bg-card/80 backdrop-blur-sm border-2 border-primary/20 relative overflow-hidden"
+        onClick={(e) => {
           playOceanSound(creature.soundFrequency);
+          createBubbles(e);
           setSelectedCreature(creature);
         }}
       >
         <CardContent className="p-6">
+          {bubbles.filter(b => Math.abs(b.x) < 300 && Math.abs(b.y) < 300).map(bubble => (
+            <div
+              key={bubble.id}
+              className="absolute w-4 h-4 bg-primary/40 rounded-full pointer-events-none animate-float"
+              style={{
+                left: `${bubble.x}px`,
+                top: `${bubble.y}px`,
+                animation: 'float 1s ease-out forwards'
+              }}
+            />
+          ))}
           <div className="text-6xl mb-4 float-animation group-hover:scale-110 transition-transform">
             {creature.icon}
           </div>
@@ -245,7 +320,17 @@ export default function Index() {
 
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-primary/20 shadow-lg">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-wrap gap-3 justify-center">
+          <div className="flex flex-wrap gap-3 justify-center items-center">
+            <Button
+              variant={isAmbientPlaying ? 'default' : 'outline'}
+              size="lg"
+              onClick={toggleAmbientSound}
+              className="gap-2"
+            >
+              <Icon name={isAmbientPlaying ? 'Volume2' : 'VolumeX'} size={20} />
+              {isAmbientPlaying ? 'Музыка вкл' : 'Музыка выкл'}
+            </Button>
+            <div className="w-px h-8 bg-border mx-2" />
             <Button
               variant={activeLayer === 'surface' ? 'default' : 'outline'}
               size="lg"

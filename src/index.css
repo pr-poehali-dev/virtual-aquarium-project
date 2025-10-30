@@ -87,16 +87,31 @@
   }
 
   .float-animation {
-    animation: float 4s ease-in-out infinite;
+    animation: float-creature 4s ease-in-out infinite;
   }
 
-  @keyframes float {
+  @keyframes float-creature {
     0%,
     100% {
       transform: translateY(0px) rotate(0deg);
     }
     50% {
       transform: translateY(-20px) rotate(2deg);
+    }
+  }
+
+  @keyframes float {
+    0% {
+      transform: translateY(0px) scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateY(-40px) scale(1.2);
+      opacity: 0.4;
+    }
+    100% {
+      transform: translateY(-80px) scale(0.5);
+      opacity: 0;
     }
   }
 }
