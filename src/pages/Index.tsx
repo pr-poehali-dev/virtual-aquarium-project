@@ -266,7 +266,7 @@ export default function Index() {
         <div className="container mx-auto px-4 py-20 text-center">
           <div className="wave-animation inline-block text-7xl mb-4">🌊</div>
           <h1 className="text-5xl md:text-7xl font-bold mb-4 bg-gradient-to-r from-ocean-surface via-primary to-ocean-mid bg-clip-text text-transparent">
-            Виртуальный Океанариум
+            Виртуальный Океанариум Тихого Океана
           </h1>
           <p className="text-xl md:text-2xl text-foreground/80 max-w-2xl mx-auto">
             Погрузитесь в удивительный мир океана и познакомьтесь с его обитателями
