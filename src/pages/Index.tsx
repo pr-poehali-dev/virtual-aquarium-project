@@ -222,7 +222,6 @@ export default function Index() {
         key={creature.id}
         className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 animate-fade-in bg-card/80 backdrop-blur-sm border-2 border-primary/20 relative overflow-hidden"
         onClick={(e) => {
-          playOceanSound(creature.soundFrequency);
           createBubbles(e);
           setSelectedCreature(creature);
         }}
