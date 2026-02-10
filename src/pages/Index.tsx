@@ -39,7 +39,7 @@ const oceanCreatures = {
       name: 'Скат манта',
       description: 'Гигантские грациозные скаты с размахом крыльев до 7 метров.',
       habitat: 'Поверхностный слой (0-200м)',
-      icon: '🦈',
+      icon: '🐟',
       facts: ['Фильтруют планктон', 'Самые умные рыбы', 'Вес до 2 тонн'],
       soundFrequency: 330
     }
@@ -171,7 +171,8 @@ export default function Index() {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    audioContextRef.current = new AudioContextClass();
     return () => {
       audioContextRef.current?.close();
     };
@@ -235,7 +236,7 @@ export default function Index() {
                 left: `${bubble.x}px`,
                 top: `${bubble.y}px`,
                 animation: 'float 1s ease-out forwards'
-              }}
+              } as React.CSSProperties}
             />
           ))}
           <div className="text-6xl mb-4 float-animation group-hover:scale-110 transition-transform">
@@ -353,7 +354,7 @@ export default function Index() {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-destructive/20 rounded-xl">
-                      <Icon name={threat.icon as any} size={32} className="text-destructive" />
+                      <Icon name={threat.icon} size={32} className="text-destructive" />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold mb-2">{threat.title}</h3>
@@ -383,7 +384,7 @@ export default function Index() {
               >
                 <CardContent className="p-6 text-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-accent/20 rounded-2xl group-hover:bg-accent/30 transition-colors">
-                    <Icon name={action.icon as any} size={32} className="text-accent" />
+                    <Icon name={action.icon} size={32} className="text-accent" />
                   </div>
                   <h3 className="text-xl font-bold mb-3">{action.title}</h3>
                   <p className="text-foreground/80">{action.description}</p>
